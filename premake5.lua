@@ -9,12 +9,12 @@ project "opengl"
     kind "ConsoleApp"
     location "build"
     language "C++"
-    targetdir "bin/%{cfg.buildcfg}"
-    ignoredefaultlibraries { "MSVCRT" }
-
+    -- targetdir "bin/%{cfg.buildcfg}"
+    -- ignoredefaultlibraries { "MSVCRT" }
     -- LINKING --
-    -- why libdirs is commented - https://premake.github.io/docs/libdirs
---    libdirs {"$libs"}
+    -- for linux uncomment the 2 lines below
+    -- libdirs {"libs/"}
+    -- links {"glfw3", "glfw3_mt", "glfw3dll"}
     links {"libs/glfw3.lib", "libs/glfw3_mt.lib", "libs/glfw3dll.lib"}
 
 --    This include dirs includes the .h without having the need to write directories 
@@ -22,8 +22,8 @@ project "opengl"
 --    includedirs{"include/**"}
     includedirs{"include"}
 
-    files { "src/**.h", "src/**.hpp", "src/**.c", "src/**.cpp" }
-    files { "include/**.h", "include/**.hpp", "include/**.c", "include/**.cpp" }
+    -- files { "src/**.h", "src/**.hpp", "src/**.c", "src/**.cpp", "src/**"}
+    files {"src/**", "resources/**", "shaders/**",  "include/**"}
     removefiles "**/dummy.cpp"
 
     -- FILTERS --
