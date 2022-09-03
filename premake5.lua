@@ -9,7 +9,7 @@ project "opengl"
     kind "ConsoleApp"
     location "build"
     language "C++"
-    -- targetdir "bin/%{cfg.buildcfg}"
+    targetdir "bin/%{cfg.buildcfg}"
     ignoredefaultlibraries { "MSVCRT" }
     -- LINKING --
     -- for linux uncomment the 2 lines below

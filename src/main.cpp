@@ -23,9 +23,6 @@ int main() {
     // glfw: initialize and configure
     // ------------------------------
 
-    char test[3];
-    _itoa_s(12, test, 10);
-
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -51,7 +48,7 @@ int main() {
 
     // build and compile our shader program
     // ------------------------------------
-    Shader defaultShader("shaders/VertexShader.s", "shaders/FragmentShader.s");
+    Shader defaultShader("shaders/VertexShader.vs", "shaders/FragmentShader.fs");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -68,19 +65,19 @@ int main() {
         1, 2, 3  // second triangle
     };
 
-    unsigned int VBO, VAO, EBO;
+    unsigned int vbo, vao, ebo;
 
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &ebo);
 
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
+    glBindVertexArray(vao);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // position attribute
@@ -109,15 +106,17 @@ int main() {
     if (data) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
+        std::cout << "Texture loaded succesfully" << std::endl;
     }
     else {
         std::cout << "Failed to load texture" << std::endl;
     }
     stbi_image_free(data);
 
+    defaultShader.use();
+
     // render loop
     // -----------
-    float f = 0.0f;
     while (!glfwWindowShouldClose(window)) {
         // input
         // -----
@@ -131,31 +130,36 @@ int main() {
         // bind textures on corresponding texture units
         glBindTexture(GL_TEXTURE_2D, texture);
 
-        //transforms
-        glm::mat4 trans = glm::mat4(1.0f);
-        trans = glm::rotate(trans, glm::radians(f), glm::vec3(0.0, 0.0, 1.0));
-        //trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
-
         // get matrix's uniform location and set matrix
         defaultShader.use();
-        unsigned int transformLoc = glGetUniformLocation(defaultShader.ID, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+        
+        glm::mat4 model         = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+        glm::mat4 view          = glm::mat4(1.0f);
+        glm::mat4 projection    = glm::mat4(1.0f);
+        model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        view  = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
-        glBindVertexArray(VAO);
+        unsigned int modelLoc = glGetUniformLocation(defaultShader.ID, "model");
+        unsigned int viewLoc  = glGetUniformLocation(defaultShader.ID, "view");
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
+        // note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
+        defaultShader.setMat4("projection", projection);
+        glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
-        f -= 0.02f;
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &vbo);
+    glDeleteBuffers(1, &ebo);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
