@@ -10,7 +10,7 @@ project "opengl"
     location "build"
     language "C++"
     -- targetdir "bin/%{cfg.buildcfg}"
-    -- ignoredefaultlibraries { "MSVCRT" }
+    ignoredefaultlibraries { "MSVCRT" }
     -- LINKING --
     -- for linux uncomment the 2 lines below
     -- libdirs {"libs/"}
@@ -35,7 +35,7 @@ project "opengl"
         defines { "NDEBUG" }
         optimize "On"
 
-    filter { "platforms:Win32" }
+    filter { "platforms:x32" }
         system "windows"
         architecture "x86"
 
