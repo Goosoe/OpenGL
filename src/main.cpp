@@ -1,7 +1,5 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -12,6 +10,7 @@
 #include "Camera.h"
 
 #define STB_IMAGE_IMPLEMENTATION
+//TODO: reimplement using the other included lib
 #include "stb_image.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -120,7 +119,6 @@ int main() {
         0, 1, 3, // first triangle
         1, 2, 3  // second triangle
     };
-    Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
     unsigned int vbo, vao, ebo;
 
@@ -290,4 +288,3 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
-

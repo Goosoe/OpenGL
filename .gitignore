@@ -1,9 +1,5 @@
-obj/
-bin/
+# Ignore content built with CMake
 build/
-.vs/
-*.sln
-Makefile
-compile_commands.json
-compile_commands/
 .cache/
+.vscode/
+compile_commands/
