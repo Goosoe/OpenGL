@@ -22,6 +22,7 @@ void processInput(GLFWwindow *window);
 // settings
 const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 800;
+const glm::vec3 LIGHT_COLOR= glm::vec3(1.0f, 1.0f, 0.0f);
 //
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -65,7 +66,8 @@ int main() {
     }
     // build and compile our shader program
     // ------------------------------------
-    Shader defaultShader("shaders/VertexShader.glsl", "shaders/FragmentShader.glsl");
+    Shader objShader("shaders/VertexShader.glsl", "shaders/FragmentShader.glsl");
+    Shader lightShader("shaders/VertexShader.glsl", "shaders/LightingFragShader.glsl");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -78,58 +80,57 @@ int main() {
         1, 2, 3  // second triangle
     };
 
-    unsigned int vbo, vao, ebo;
+    unsigned int vbo, cubeVao, lightVao; //, ebo;
 
-    glGenVertexArrays(1, &vao);
+    glGenVertexArrays(1, &lightVao);
+    glGenVertexArrays(1, &cubeVao);
     glGenBuffers(1, &vbo);
     // glGenBuffers(1, &ebo);
 
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(vao);
+    glBindVertexArray(lightVao);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(ObjLoader::cubeVertices), ObjLoader::cubeVertices, GL_STATIC_DRAW);
 
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
+    glBindVertexArray(cubeVao);
+    // position attribute
+
+// ===============
     // position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // color attribute
-    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    // glEnableVertexAttribArray(1);
-
-    //tex attribute
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
     // load and create a texture 
     // -------------------------
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    // set the texture wrapping parameters todo:
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    // set texture filtering parameters todo:
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    // unsigned int texture;
+    // glGenTextures(1, &texture);
+    // glBindTexture(GL_TEXTURE_2D, texture);
+    // // set the texture wrapping parameters todo:
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    // // set texture filtering parameters todo:
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-    unsigned char* data = stbi_load("resources/textures/wall.jpg", &width, &height, &nrChannels, 0);
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        std::cout << "Texture loaded succesfully" << std::endl;
-    }
-    else {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
-    glEnable(GL_DEPTH_TEST);
+    // int width, height, nrChannels;
+    // stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+    // unsigned char* data = stbi_load("resources/textures/wall.jpg", &width, &height, &nrChannels, 0);
+    // if (data) {
+    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    //     glGenerateMipmap(GL_TEXTURE_2D);
+    //     std::cout << "Texture loaded succesfully" << std::endl;
+    // }
+    // else {
+    //     std::cout << "Failed to load texture" << std::endl;
+    // }
+    // stbi_image_free(data);
+    // glEnable(GL_DEPTH_TEST);
 
-    defaultShader.use();
+    // defaultShader.use();
 
     // render loop
     // -----------
@@ -148,31 +149,49 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // bind textures on corresponding texture units
-        glBindTexture(GL_TEXTURE_2D, texture);
+        // glBindTexture(GL_TEXTURE_2D, texture);
 
         // get matrix's uniform location and set matrix
-        defaultShader.use();
+        objShader.use();
 
+        objShader.setVec3("objectColor", 1.0f, 0.5f, 0.3f);
+        objShader.setVec3("lightColor", LIGHT_COLOR);
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);       
-        defaultShader.setMat4("projection", projection);
-
         glm::mat4 view = camera.GetViewMatrix();
-        defaultShader.setMat4("view", view);
+        objShader.setMat4("projection", projection);
+        objShader.setMat4("view", view);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, cubePositions[0]);
+        objShader.setMat4("model", model);
+        // render the cube
+        glBindVertexArray(cubeVao);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        glBindVertexArray(vao);
+        lightShader.use();
 
-        float radius = 10.0f;
+        lightShader.setVec3("lightColor", LIGHT_COLOR);
+        lightShader.setMat4("projection", projection);
+        lightShader.setMat4("view", view);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, cubePositions[1]);
+        // model = glm::lightVaoscale(model, glm::vec3(0.2f)); // a smaller cube
+        lightShader.setMat4("model", model);
 
-        for (int i = 0; i < 2; i++) {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, cubePositions[i]);
-            model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-            model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-            float angle = 20.0f * i; 
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            defaultShader.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+        glBindVertexArray(lightVao);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // float radius = 10.0f;
+
+        // for (int i = 0; i < 2; i++) {
+        //     glm::mat4 model = glm::mat4(1.0f);
+        //     model = glm::translate(model, cubePositions[i]);
+        //     model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        //     model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+        //     float angle = 20.0f * i; 
+        //     model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+        //     objShader.setMat4("model", model);
+        //     glDrawArrays(GL_TRIANGLES, 0, 36);
+        // }
 
         // glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -184,7 +203,8 @@ int main() {
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &vao);
+    glDeleteVertexArrays(1, &cubeVao);
+    glDeleteVertexArrays(1, &lightVao);
     glDeleteBuffers(1, &vbo);
     // glDeleteBuffers(1, &ebo);
 
