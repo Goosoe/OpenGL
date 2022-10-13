@@ -87,24 +87,23 @@ int main() {
     glGenBuffers(1, &vbo);
     // glGenBuffers(1, &ebo);
 
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(lightVao);
-
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(ObjLoader::cubeVertices), ObjLoader::cubeVertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+    glBindVertexArray(lightVao);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     glBindVertexArray(cubeVao);
     // position attribute
-
-// ===============
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // load and create a texture 
     // -------------------------
@@ -128,12 +127,14 @@ int main() {
     //     std::cout << "Failed to load texture" << std::endl;
     // }
     // stbi_image_free(data);
-    // glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
 
     // defaultShader.use();
 
     // render loop
     // -----------
+    const float ambient = 0.3f;
+
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
@@ -153,6 +154,9 @@ int main() {
 
         // get matrix's uniform location and set matrix
         objShader.use();
+
+        objShader.setFloat("ambientStr", ambient);
+        objShader.setVec3("lightPos", cubePositions[1]);
 
         objShader.setVec3("objectColor", 1.0f, 0.5f, 0.3f);
         objShader.setVec3("lightColor", LIGHT_COLOR);
