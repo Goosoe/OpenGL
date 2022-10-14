@@ -22,10 +22,10 @@ void processInput(GLFWwindow *window);
 // settings
 const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 800;
-const glm::vec3 LIGHT_COLOR= glm::vec3(1.0f, 1.0f, 0.0f);
-//
+const glm::vec3 LIGHT_COLOR= glm::vec3(1.0f, 1.0f, 1.0f);
+
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, -2.0f, 10.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -66,14 +66,14 @@ int main() {
     }
     // build and compile our shader program
     // ------------------------------------
-    Shader objShader("shaders/VertexShader.glsl", "shaders/FragmentShader.glsl");
-    Shader lightShader("shaders/VertexShader.glsl", "shaders/LightingFragShader.glsl");
+    Shader objShader("shaders/ObjectVertShader.glsl", "shaders/ObjectFragShader.glsl");
+    Shader lightShader("shaders/LightingVertShader.glsl", "shaders/LightingFragShader.glsl");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     glm::vec3 cubePositions[] = {
-        glm::vec3( 0.0f,  0.0f,  0.0f), 
-        glm::vec3( 2.0f,  5.0f, -15.0f)
+        glm::vec3( 0.0f,  -5.0f,  5.0f), 
+        glm::vec3( 0.0f,  0.0f, -10.0f)
     };
     unsigned int indices[] = {
         0, 1, 3, // first triangle
@@ -133,7 +133,7 @@ int main() {
 
     // render loop
     // -----------
-    const float ambient = 0.3f;
+    const float ambient = 0.1f;
 
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = static_cast<float>(glfwGetTime());
@@ -146,7 +146,7 @@ int main() {
 
         // render
         // ------
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // bind textures on corresponding texture units
@@ -157,16 +157,23 @@ int main() {
 
         objShader.setFloat("ambientStr", ambient);
         objShader.setVec3("lightPos", cubePositions[1]);
+        objShader.setVec3("viewPos", camera.Position);
 
         objShader.setVec3("objectColor", 1.0f, 0.5f, 0.3f);
         objShader.setVec3("lightColor", LIGHT_COLOR);
+
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);       
-        glm::mat4 view = camera.GetViewMatrix();
         objShader.setMat4("projection", projection);
+
+        glm::mat4 view = camera.GetViewMatrix();
         objShader.setMat4("view", view);
+
         glm::mat4 model = glm::mat4(1.0f);
+        glm::vec3 scale = glm::vec3(10.0f, 0.4f, 10.0f);
         model = glm::translate(model, cubePositions[0]);
+        model = glm::scale(model, scale);
         objShader.setMat4("model", model);
+        //
         // render the cube
         glBindVertexArray(cubeVao);
         glDrawArrays(GL_TRIANGLES, 0, 36);
